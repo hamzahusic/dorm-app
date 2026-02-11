@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { ThemedView } from '@/src/components/themed/ThemedView';
 import { ThemedText } from '@/src/components/themed/ThemedText';
@@ -12,6 +12,7 @@ import { ThemedButton } from '@/src/components/themed/ThemedButton';
 import { Header } from '@/src/components/common/Header';
 import { Badge } from '@/src/components/common/Badge';
 import { EmptyState } from '@/src/components/common/EmptyState';
+import { PenaltyCard } from '@/src/components/penalty/PenaltyCard';
 import { useTheme } from '@/src/theme';
 import { useStore } from '@/src/store';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,13 +21,20 @@ import type { Meal } from '@/src/types';
 
 export default function ManageScreen() {
   const { spacing, colors } = useTheme();
-  const { meals, getRegistrationStats, registrations, users, markAsCollected } = useStore();
-  const [activeTab, setActiveTab] = useState<'meals' | 'registrations'>('meals');
+  const { currentUser, meals, getRegistrationStats, registrations, users, markAsCollected, getAllPenalties, deleteMeal } = useStore();
+  const isMentor = currentUser.role === 'mentor';
+  const [activeTab, setActiveTab] = useState<'meals' | 'registrations' | 'mentees'>('meals');
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'collected' | 'pending'>('all');
+  const [expandedMenteeId, setExpandedMenteeId] = useState<string | null>(null);
 
   const upcomingMeals = meals.filter(m => !isPast(m.date));
   const pastMeals = meals.filter(m => isPast(m.date));
+
+  // Mentor-specific data
+  const mentees = isMentor ? users.filter(u => u.reportsTo === currentUser.id) : [];
+  const allPenalties = getAllPenalties();
+  const getMenteePenalties = (menteeId: string) => allPenalties.filter(p => p.userId === menteeId && !p.cleared);
 
   const selectedMeal = selectedMealId ? meals.find(m => m.id === selectedMealId) : null;
   const mealRegistrations = selectedMeal
@@ -68,19 +76,19 @@ export default function ManageScreen() {
           style={[
             styles.tab,
             {
-              backgroundColor: activeTab === 'registrations' ? colors.primary : 'transparent',
+              backgroundColor: activeTab === (isMentor ? 'mentees' : 'registrations') ? colors.primary : 'transparent',
               paddingVertical: spacing.sm,
               paddingHorizontal: spacing.lg,
               borderRadius: 8,
             },
           ]}
-          onPress={() => setActiveTab('registrations')}
+          onPress={() => setActiveTab(isMentor ? 'mentees' : 'registrations')}
         >
           <ThemedText
             weight="semibold"
-            style={{ color: activeTab === 'registrations' ? '#FFFFFF' : colors.text }}
+            style={{ color: activeTab === (isMentor ? 'mentees' : 'registrations') ? '#FFFFFF' : colors.text }}
           >
-            Registrations
+            {isMentor ? 'Mentees' : 'Registrations'}
           </ThemedText>
         </TouchableOpacity>
       </View>
@@ -154,6 +162,42 @@ export default function ManageScreen() {
                         </ThemedText>
                       </View>
                     </View>
+                    {isMentor && (
+                      <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
+                        <ThemedButton
+                          variant="outline"
+                          size="sm"
+                          onPress={() => router.push(`/modal/edit-meal?id=${meal.id}`)}
+                          icon={<Ionicons name="pencil" size={16} color={colors.primary} />}
+                        >
+                          Edit
+                        </ThemedButton>
+                        <ThemedButton
+                          variant="outline"
+                          size="sm"
+                          onPress={() => {
+                            Alert.alert(
+                              'Delete Meal',
+                              'Are you sure you want to delete this meal? This action cannot be undone.',
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Delete',
+                                  style: 'destructive',
+                                  onPress: () => {
+                                    deleteMeal(meal.id);
+                                    Alert.alert('Success', 'Meal deleted successfully');
+                                  }
+                                }
+                              ]
+                            );
+                          }}
+                          icon={<Ionicons name="trash" size={16} color={colors.error} />}
+                        >
+                          Delete
+                        </ThemedButton>
+                      </View>
+                    )}
                   </ThemedCard>
                 );
               })
@@ -190,8 +234,109 @@ export default function ManageScreen() {
         </ScrollView>
       )}
 
+      {/* Mentees Tab (Mentors only) */}
+      {activeTab === 'mentees' && isMentor && (
+        <ScrollView contentContainerStyle={{ padding: spacing.md }}>
+          <View style={{ marginBottom: spacing.md }}>
+            <ThemedText variant="subheading" weight="semibold">
+              Your Mentees ({mentees.length})
+            </ThemedText>
+            <ThemedText variant="caption" color="textSecondary" style={{ marginTop: spacing.xs }}>
+              Tap on a mentee to view their penalties
+            </ThemedText>
+          </View>
+
+          {mentees.length === 0 ? (
+            <EmptyState
+              icon="people-outline"
+              title="No Mentees"
+              message="You don't have any mentees assigned to you yet."
+            />
+          ) : (
+            mentees.map(mentee => {
+              const menteePenalties = getMenteePenalties(mentee.id);
+              const isExpanded = expandedMenteeId === mentee.id;
+
+              return (
+                <View key={mentee.id} style={{ marginBottom: spacing.md }}>
+                  <TouchableOpacity
+                    onPress={() => setExpandedMenteeId(isExpanded ? null : mentee.id)}
+                    activeOpacity={0.7}
+                  >
+                    <ThemedCard>
+                      <View style={styles.menteeRow}>
+                        <View
+                          style={[
+                            styles.menteeIcon,
+                            {
+                              backgroundColor: menteePenalties.length > 0 ? `${colors.error}15` : `${colors.success}15`,
+                              marginRight: spacing.md,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="person"
+                            size={24}
+                            color={menteePenalties.length > 0 ? colors.error : colors.success}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <ThemedText variant="body" weight="semibold">
+                            {mentee.fullName}
+                          </ThemedText>
+                          <ThemedText variant="caption" color="textSecondary">
+                            {mentee.email}
+                          </ThemedText>
+                          <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs }}>
+                            <Badge
+                              label={`${menteePenalties.length} ${menteePenalties.length === 1 ? 'Penalty' : 'Penalties'}`}
+                              variant={menteePenalties.length > 0 ? 'error' : 'success'}
+                              size="sm"
+                            />
+                          </View>
+                        </View>
+                        <Ionicons
+                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={24}
+                          color={colors.textSecondary}
+                        />
+                      </View>
+                    </ThemedCard>
+                  </TouchableOpacity>
+
+                  {/* Expanded Penalties Section */}
+                  {isExpanded && (
+                    <View style={{ marginTop: spacing.sm, marginLeft: spacing.md }}>
+                      {menteePenalties.length === 0 ? (
+                        <ThemedCard style={{ backgroundColor: `${colors.success}10` }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                            <ThemedText variant="body" color="success">
+                              No active penalties. Great job!
+                            </ThemedText>
+                          </View>
+                        </ThemedCard>
+                      ) : (
+                        <>
+                          <ThemedText variant="caption" weight="semibold" color="textSecondary" style={{ marginBottom: spacing.sm, marginLeft: spacing.sm }}>
+                            Active Penalties:
+                          </ThemedText>
+                          {menteePenalties.map(penalty => (
+                            <PenaltyCard key={penalty.id} penalty={penalty} showClearButton />
+                          ))}
+                        </>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+      )}
+
       {/* Registrations Tab */}
-      {activeTab === 'registrations' && (
+      {activeTab === 'registrations' && !isMentor && (
         <ScrollView contentContainerStyle={{ padding: spacing.md }}>
           {/* Meal Selector */}
           <View style={{ marginBottom: spacing.lg }}>
@@ -407,6 +552,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registrationIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menteeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menteeIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,

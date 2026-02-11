@@ -27,6 +27,8 @@ interface AppState {
 
   // Meal Actions
   createMeal: (meal: Omit<Meal, 'id' | 'createdAt'>) => void;
+  updateMeal: (mealId: string, updates: Partial<Pick<Meal, 'mealName' | 'description' | 'date'>>) => void;
+  deleteMeal: (mealId: string) => void;
   getMealById: (id: string) => Meal | undefined;
   getTodaysMeal: () => Meal | undefined;
   getUpcomingMeals: (limit?: number) => Meal[];
@@ -123,6 +125,21 @@ export const useStore = create<AppState>((set, get) => ({
 
     set((state) => ({
       meals: [newMeal, ...state.meals].sort((a, b) => b.date.localeCompare(a.date)),
+    }));
+  },
+
+  updateMeal: (mealId: string, updates: Partial<Pick<Meal, 'mealName' | 'description' | 'date'>>) => {
+    set((state) => ({
+      meals: state.meals.map(m =>
+        m.id === mealId ? { ...m, ...updates } : m
+      ).sort((a, b) => b.date.localeCompare(a.date)),
+    }));
+  },
+
+  deleteMeal: (mealId: string) => {
+    set((state) => ({
+      meals: state.meals.filter(m => m.id !== mealId),
+      registrations: state.registrations.filter(r => r.mealId !== mealId),
     }));
   },
 

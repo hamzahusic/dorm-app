@@ -314,14 +314,24 @@ export default function ScannerScreen() {
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
-                  <ThemedButton
-                    variant="primary"
-                    onPress={handleManualScan}
-                    disabled={!selectedUserId}
-                    style={{ marginTop: spacing.md }}
-                  >
-                    Mark as Collected
-                  </ThemedButton>
+                  <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+                    <ThemedButton
+                      variant="primary"
+                      onPress={handleManualScan}
+                      disabled={!selectedUserId}
+                    >
+                      Mark as Collected
+                    </ThemedButton>
+                    {selectedUserId && (
+                      <ThemedButton
+                        variant="outline"
+                        onPress={() => setSelectedUserId(null)}
+                        icon={<Ionicons name="close-circle" size={20} color={colors.error} />}
+                      >
+                        Clear Selection
+                      </ThemedButton>
+                    )}
+                  </View>
                 </>
               )}
             </ThemedCard>

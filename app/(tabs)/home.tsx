@@ -68,8 +68,8 @@ export default function HomeScreen() {
     );
   };
 
-  // STUDENT VIEW - Enhanced with beautiful UI
-  if (currentUser.role === 'student') {
+  // STUDENT & MENTOR VIEW - Enhanced with beautiful UI
+  if (currentUser.role === 'student' || currentUser.role === 'mentor') {
     return (
       <ThemedView style={styles.container}>
         <Header
@@ -351,96 +351,6 @@ export default function HomeScreen() {
                     </ThemedCard>
                   );
                 })}
-              </View>
-            </View>
-          )}
-        </ScrollView>
-      </ThemedView>
-    );
-  }
-
-  // MENTOR VIEW
-  if (currentUser.role === 'mentor') {
-    const mentees = users.filter(u => u.reportsTo === currentUser.id);
-    const menteeIds = mentees.map(m => m.id);
-    const menteePenalties = getAllPenalties().filter(p => menteeIds.includes(p.userId) && !p.cleared);
-    const todayStats = todaysMeal ? getRegistrationStats(todaysMeal.id) : null;
-    const registeredMentees = todaysMeal
-      ? registrations.filter(r => r.mealId === todaysMeal.id && menteeIds.includes(r.userId))
-      : [];
-
-    return (
-      <ThemedView style={styles.container}>
-        <Header title="Home" />
-        <ScrollView contentContainerStyle={{ padding: spacing.md }}>
-          <View style={{ marginBottom: spacing.lg }}>
-            <ThemedText variant="heading" weight="semibold">
-              Welcome, {currentUser.fullName.split(' ')[0]}
-            </ThemedText>
-            <Badge label="MENTOR" variant="success" style={{ marginTop: spacing.sm }} />
-          </View>
-
-          <View style={{ marginBottom: spacing.xl }}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="people" size={24} color={colors.text} />
-              <ThemedText variant="subheading" weight="semibold" style={{ marginLeft: spacing.sm }}>
-                Your Mentees
-              </ThemedText>
-            </View>
-            <View style={[styles.statsGrid, { marginTop: spacing.md }]}>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="primary">
-                  {mentees.length}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Total Mentees
-                </ThemedText>
-              </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="success">
-                  {registeredMentees.length}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Registered Today
-                </ThemedText>
-              </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="error">
-                  {menteePenalties.length}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Active Penalties
-                </ThemedText>
-              </ThemedCard>
-            </View>
-          </View>
-
-          {todaysMeal && (
-            <View style={{ marginBottom: spacing.xl }}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="restaurant" size={24} color={colors.text} />
-                <ThemedText variant="subheading" weight="semibold" style={{ marginLeft: spacing.sm }}>
-                  Today's Meal
-                </ThemedText>
-              </View>
-              <View style={{ marginTop: spacing.md }}>
-                <MealCard meal={todaysMeal} showActions={false} />
-              </View>
-            </View>
-          )}
-
-          {menteePenalties.length > 0 && (
-            <View style={{ marginBottom: spacing.xl }}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="warning" size={24} color={colors.error} />
-                <ThemedText variant="subheading" weight="semibold" style={{ marginLeft: spacing.sm }}>
-                  Mentee Penalties ({menteePenalties.length})
-                </ThemedText>
-              </View>
-              <View style={{ marginTop: spacing.md }}>
-                {menteePenalties.slice(0, 5).map(penalty => (
-                  <PenaltyCard key={penalty.id} penalty={penalty} showClearButton />
-                ))}
               </View>
             </View>
           )}
