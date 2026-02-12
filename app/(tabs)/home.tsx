@@ -266,7 +266,7 @@ export default function HomeScreen() {
                   </ThemedText>
 
                   {/* Mentor Info */}
-                  {currentUser.reportsTo && (
+                  {currentUser.role === 'student' && currentUser.reportsTo && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm }}>
                       <Ionicons name="person-circle-outline" size={16} color={colors.primary} />
                       <ThemedText variant="caption" color="textSecondary">
