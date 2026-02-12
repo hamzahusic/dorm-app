@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Platform, Alert, TouchableOpacity, TextInput } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
+import QRCode from 'react-native-qrcode-svg';
 import { ThemedView } from '@/src/components/themed/ThemedView';
 import { ThemedText } from '@/src/components/themed/ThemedText';
 import { ThemedCard } from '@/src/components/themed/ThemedCard';
@@ -34,11 +35,13 @@ export default function ScannerScreen() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [showQRCode, setShowQRCode] = useState(false);
 
   const todaysMeal = getTodaysMeal();
   const todayStats = todaysMeal ? getRegistrationStats(todaysMeal.id) : null;
 
   const isStudent = currentUser.role === 'student';
+  const isMentor = currentUser.role === 'mentor';
   const canManageCollections = ['mentor', 'staff', 'admin'].includes(currentUser.role);
 
   useEffect(() => {
@@ -266,6 +269,111 @@ export default function ScannerScreen() {
             )}
           </ThemedCard>
         </View>
+
+        {/* QR Code Generation - Only for mentors */}
+        {isMentor && todaysMeal && (
+          <View style={{ marginBottom: spacing.lg }}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="qr-code" size={24} color={colors.text} />
+              <ThemedText variant="subheading" weight="semibold" style={{ marginLeft: spacing.sm }}>
+                Meal QR Code
+              </ThemedText>
+            </View>
+            <ThemedCard style={{ marginTop: spacing.md }}>
+              {!showQRCode ? (
+                <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+                  <View style={[styles.qrIconContainer, { backgroundColor: `${colors.primary}15`, marginBottom: spacing.md }]}>
+                    <Ionicons name="qr-code-outline" size={48} color={colors.primary} />
+                  </View>
+                  <ThemedText variant="subheading" weight="semibold" style={{ marginBottom: spacing.xs, textAlign: 'center' }}>
+                    Generate QR Code
+                  </ThemedText>
+                  <ThemedText variant="caption" color="textSecondary" style={{ marginBottom: spacing.lg, textAlign: 'center' }}>
+                    Students can scan this code to collect their meal
+                  </ThemedText>
+                  <ThemedButton
+                    variant="primary"
+                    onPress={() => {
+                      setShowQRCode(true);
+                      if (Platform.OS !== 'web') {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      }
+                    }}
+                    icon={<Ionicons name="create-outline" size={20} color="#FFFFFF" />}
+                  >
+                    Generate QR Code
+                  </ThemedButton>
+                </View>
+              ) : (
+                <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+                  {/* QR Code Display */}
+                  <View style={[styles.qrCodeContainer, { backgroundColor: '#FFFFFF', padding: spacing.lg, borderRadius: 12, marginBottom: spacing.md }]}>
+                    <QRCode
+                      value={JSON.stringify({
+                        mealId: todaysMeal.id,
+                        mealName: todaysMeal.mealName,
+                        date: todaysMeal.date,
+                        timestamp: new Date().toISOString(),
+                      })}
+                      size={200}
+                      color="#000000"
+                      backgroundColor="#FFFFFF"
+                    />
+                  </View>
+
+                  {/* Meal Info */}
+                  <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
+                    <ThemedText variant="subheading" weight="bold" style={{ marginBottom: spacing.xs }}>
+                      {todaysMeal.mealName}
+                    </ThemedText>
+                    <ThemedText variant="caption" color="textSecondary">
+                      Students can scan this code to collect their meal
+                    </ThemedText>
+                  </View>
+
+                  {/* Stats */}
+                  {todayStats && (
+                    <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+                      <View style={{ alignItems: 'center' }}>
+                        <ThemedText variant="lg" weight="bold" color="primary">
+                          {todayStats.total}
+                        </ThemedText>
+                        <ThemedText variant="caption" color="textSecondary">
+                          Registered
+                        </ThemedText>
+                      </View>
+                      <View style={{ alignItems: 'center' }}>
+                        <ThemedText variant="lg" weight="bold" color="success">
+                          {todayStats.collected}
+                        </ThemedText>
+                        <ThemedText variant="caption" color="textSecondary">
+                          Collected
+                        </ThemedText>
+                      </View>
+                      <View style={{ alignItems: 'center' }}>
+                        <ThemedText variant="lg" weight="bold" color="warning">
+                          {todayStats.pending}
+                        </ThemedText>
+                        <ThemedText variant="caption" color="textSecondary">
+                          Pending
+                        </ThemedText>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Hide Button */}
+                  <ThemedButton
+                    variant="outline"
+                    onPress={() => setShowQRCode(false)}
+                    icon={<Ionicons name="eye-off-outline" size={20} color={colors.primary} />}
+                  >
+                    Hide QR Code
+                  </ThemedButton>
+                </View>
+              )}
+            </ThemedCard>
+          </View>
+        )}
 
         {/* Manual Registration - Only for staff/mentors */}
         {canManageCollections && (
@@ -552,5 +660,19 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderWidth: 1,
+  },
+  qrIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrCodeContainer: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
 });
