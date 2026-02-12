@@ -422,7 +422,14 @@ export default function HomeScreen() {
                       { backgroundColor: `${colors.success}20` },
                     ]}
                   >
-                    <ThemedText weight="bold" color="success" style={{ fontSize: 48 }}>
+                    <ThemedText
+                      weight="bold"
+                      color="success"
+                      style={{ fontSize: 40 }}
+                      adjustsFontSizeToFit
+                      numberOfLines={1}
+                      minimumFontScale={0.5}
+                    >
                       {todayStats?.total || 0}
                     </ThemedText>
                   </View>
@@ -449,7 +456,14 @@ export default function HomeScreen() {
                       { backgroundColor: `${colors.primary}20` },
                     ]}
                   >
-                    <ThemedText weight="bold" color="primary" style={{ fontSize: 48 }}>
+                    <ThemedText
+                      weight="bold"
+                      color="primary"
+                      style={{ fontSize: 40 }}
+                      adjustsFontSizeToFit
+                      numberOfLines={1}
+                      minimumFontScale={0.5}
+                    >
                       {todayStats?.collected || 0}
                     </ThemedText>
                   </View>
@@ -477,7 +491,14 @@ export default function HomeScreen() {
                         { backgroundColor: `${colors.warning}20` },
                       ]}
                     >
-                      <ThemedText weight="bold" color="warning" style={{ fontSize: 48 }}>
+                      <ThemedText
+                        weight="bold"
+                        color="warning"
+                        style={{ fontSize: 40 }}
+                        adjustsFontSizeToFit
+                        numberOfLines={1}
+                        minimumFontScale={0.5}
+                      >
                         {todayStats.pending}
                       </ThemedText>
                     </View>
@@ -523,26 +544,36 @@ export default function HomeScreen() {
     );
   }
 
-  // ADMIN VIEW
+  // ADMIN VIEW - Clean and organized
   if (currentUser.role === 'admin') {
     const totalUsers = users.length;
     const totalStudents = users.filter(u => u.role === 'student').length;
     const totalMeals = meals.length;
-    const totalRegistrations = registrations.length;
-    const activePenalties = getAllPenalties().filter(p => !p.cleared).length;
+    const allPenalties = getAllPenalties();
+    // Count students who reached 6 penalties
+    const studentsWithSixPenalties = users.filter(u => {
+      const userPenalties = allPenalties.filter(p => p.userId === u.id && !p.cleared);
+      return userPenalties.length >= 6;
+    }).length;
     const todayStats = todaysMeal ? getRegistrationStats(todaysMeal.id) : null;
 
     return (
       <ThemedView style={styles.container}>
-        <Header title="Admin Dashboard" />
-        <ScrollView contentContainerStyle={{ padding: spacing.md }}>
+        <Header title="Home" />
+        <ScrollView
+          contentContainerStyle={{ padding: spacing.md }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Welcome Section */}
           <View style={{ marginBottom: spacing.lg }}>
-            <ThemedText variant="heading" weight="semibold">
-              System Administration
+            <ThemedText variant="heading" weight="bold" style={{ fontSize: 28, marginBottom: spacing.sm }}>
+              Hi, {currentUser.fullName.split(' ')[0]}!
             </ThemedText>
-            <Badge label="ADMIN" variant="error" style={{ marginTop: spacing.sm }} />
+            <Badge label="ADMIN" variant="error" size="sm" />
           </View>
 
+          {/* System Statistics */}
           <View style={{ marginBottom: spacing.xl }}>
             <View style={styles.sectionHeader}>
               <Ionicons name="analytics" size={24} color={colors.text} />
@@ -550,58 +581,126 @@ export default function HomeScreen() {
                 System Statistics
               </ThemedText>
             </View>
-            <View style={[styles.statsGrid, { marginTop: spacing.md }]}>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="primary">
-                  {totalUsers}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Total Users
-                </ThemedText>
+
+            {/* Grid Layout for Stats */}
+            <View style={{ marginTop: spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              {/* Total Users */}
+              <ThemedCard style={{ flex: 1, minWidth: '47%', padding: spacing.md }}>
+                <View style={{ alignItems: 'center' }}>
+                  <View style={[styles.compactStatIcon, { backgroundColor: `${colors.primary}15` }]}>
+                    <Ionicons name="people" size={24} color={colors.primary} />
+                  </View>
+                  <ThemedText
+                    weight="bold"
+                    color="primary"
+                    style={{ fontSize: 32, marginTop: spacing.sm }}
+                    adjustsFontSizeToFit
+                    numberOfLines={1}
+                    minimumFontScale={0.5}
+                  >
+                    {totalUsers}
+                  </ThemedText>
+                  <ThemedText variant="caption" weight="semibold" style={{ marginTop: spacing.xs, textAlign: 'center' }}>
+                    Total Users
+                  </ThemedText>
+                </View>
               </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="success">
-                  {totalStudents}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Students
-                </ThemedText>
+
+              {/* Total Students */}
+              <ThemedCard style={{ flex: 1, minWidth: '47%', padding: spacing.md }}>
+                <View style={{ alignItems: 'center' }}>
+                  <View style={[styles.compactStatIcon, { backgroundColor: `${colors.success}15` }]}>
+                    <Ionicons name="school" size={24} color={colors.success} />
+                  </View>
+                  <ThemedText
+                    weight="bold"
+                    color="success"
+                    style={{ fontSize: 32, marginTop: spacing.sm }}
+                    adjustsFontSizeToFit
+                    numberOfLines={1}
+                    minimumFontScale={0.5}
+                  >
+                    {totalStudents}
+                  </ThemedText>
+                  <ThemedText variant="caption" weight="semibold" style={{ marginTop: spacing.xs, textAlign: 'center' }}>
+                    Students
+                  </ThemedText>
+                </View>
               </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="warning">
-                  {totalMeals}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Total Meals
-                </ThemedText>
+
+              {/* Total Meals */}
+              <ThemedCard style={{ flex: 1, minWidth: '47%', padding: spacing.md }}>
+                <View style={{ alignItems: 'center' }}>
+                  <View style={[styles.compactStatIcon, { backgroundColor: `${colors.warning}15` }]}>
+                    <Ionicons name="restaurant" size={24} color={colors.warning} />
+                  </View>
+                  <ThemedText
+                    weight="bold"
+                    color="warning"
+                    style={{ fontSize: 32, marginTop: spacing.sm }}
+                    adjustsFontSizeToFit
+                    numberOfLines={1}
+                    minimumFontScale={0.5}
+                  >
+                    {totalMeals}
+                  </ThemedText>
+                  <ThemedText variant="caption" weight="semibold" style={{ marginTop: spacing.xs, textAlign: 'center' }}>
+                    Total Meals
+                  </ThemedText>
+                </View>
               </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="info">
-                  {totalRegistrations}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Registrations
-                </ThemedText>
-              </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="error">
-                  {activePenalties}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Active Penalties
-                </ThemedText>
-              </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="success">
-                  {todayStats?.total || 0}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Today's Registrations
-                </ThemedText>
-              </ThemedCard>
+
+              {/* Meals Registered Today */}
+              {todayStats && (
+                <ThemedCard style={{ flex: 1, minWidth: '47%', padding: spacing.md }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={[styles.compactStatIcon, { backgroundColor: `${colors.primary}15` }]}>
+                      <Ionicons name="calendar" size={24} color={colors.primary} />
+                    </View>
+                    <ThemedText
+                      weight="bold"
+                      color="primary"
+                      style={{ fontSize: 32, marginTop: spacing.sm }}
+                      adjustsFontSizeToFit
+                      numberOfLines={1}
+                      minimumFontScale={0.5}
+                    >
+                      {todayStats.total}
+                    </ThemedText>
+                    <ThemedText variant="caption" weight="semibold" style={{ marginTop: spacing.xs, textAlign: 'center' }}>
+                      Registered Today
+                    </ThemedText>
+                  </View>
+                </ThemedCard>
+              )}
+
+              {/* Students with 6+ Penalties */}
+              {studentsWithSixPenalties > 0 && (
+                <ThemedCard style={{ flex: 1, minWidth: '47%', padding: spacing.md, borderLeftWidth: 4, borderLeftColor: colors.error }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={[styles.compactStatIcon, { backgroundColor: `${colors.error}15` }]}>
+                      <Ionicons name="alert-circle" size={24} color={colors.error} />
+                    </View>
+                    <ThemedText
+                      weight="bold"
+                      color="error"
+                      style={{ fontSize: 32, marginTop: spacing.sm }}
+                      adjustsFontSizeToFit
+                      numberOfLines={1}
+                      minimumFontScale={0.5}
+                    >
+                      {studentsWithSixPenalties}
+                    </ThemedText>
+                    <ThemedText variant="caption" weight="semibold" style={{ marginTop: spacing.xs, textAlign: 'center' }}>
+                      6+ Penalties
+                    </ThemedText>
+                  </View>
+                </ThemedCard>
+              )}
             </View>
           </View>
 
+          {/* Today's Meal */}
           {todaysMeal && (
             <View style={{ marginBottom: spacing.xl }}>
               <View style={styles.sectionHeader}>
@@ -616,19 +715,22 @@ export default function HomeScreen() {
             </View>
           )}
 
-          <View style={{ marginBottom: spacing.xl }}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="time-outline" size={24} color={colors.text} />
-              <ThemedText variant="subheading" weight="semibold" style={{ marginLeft: spacing.sm }}>
-                Recent Activity
-              </ThemedText>
+          {/* Upcoming Meals */}
+          {upcomingMeals.length > 0 && (
+            <View style={{ marginBottom: spacing.xl }}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="calendar-outline" size={24} color={colors.text} />
+                <ThemedText variant="subheading" weight="semibold" style={{ marginLeft: spacing.sm }}>
+                  Upcoming Meals
+                </ThemedText>
+              </View>
+              <View style={{ marginTop: spacing.md }}>
+                {upcomingMeals.slice(0, 3).map(meal => (
+                  <MealCard key={meal.id} meal={meal} showActions={false} />
+                ))}
+              </View>
             </View>
-            <ThemedCard style={{ marginTop: spacing.md }}>
-              <ThemedText color="textSecondary" variant="caption">
-                Activity feed coming soon...
-              </ThemedText>
-            </ThemedCard>
-          </View>
+          )}
         </ScrollView>
       </ThemedView>
     );
@@ -700,10 +802,18 @@ const styles = StyleSheet.create({
   },
   statBadge: {
     minWidth: 80,
+    maxWidth: 120,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
+  },
+  compactStatIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

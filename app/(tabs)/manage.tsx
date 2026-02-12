@@ -24,7 +24,8 @@ export default function ManageScreen() {
   const { currentUser, meals, getRegistrationStats, registrations, users, markAsCollected, undoCollection, getAllPenalties, deleteMeal, getTodaysMeal } = useStore();
   const isMentor = currentUser.role === 'mentor';
   const isStaff = currentUser.role === 'staff';
-  const canEditMeals = isMentor || isStaff;
+  const isAdmin = currentUser.role === 'admin';
+  const canEditMeals = isMentor || isStaff || isAdmin;
   const [activeTab, setActiveTab] = useState<'meals' | 'registrations' | 'mentees'>('meals');
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'collected' | 'pending'>('pending');
@@ -38,9 +39,9 @@ export default function ManageScreen() {
   const allPenalties = getAllPenalties();
   const getMenteePenalties = (menteeId: string) => allPenalties.filter(p => p.userId === menteeId && !p.cleared);
 
-  // For staff, auto-select today's meal
+  // For staff and admin, auto-select today's meal
   const todaysMeal = getTodaysMeal();
-  const effectiveSelectedMealId = isStaff && activeTab === 'registrations' ? todaysMeal?.id || null : selectedMealId;
+  const effectiveSelectedMealId = (isStaff || isAdmin) && activeTab === 'registrations' ? todaysMeal?.id || null : selectedMealId;
   const selectedMeal = effectiveSelectedMealId ? meals.find(m => m.id === effectiveSelectedMealId) : null;
   const mealRegistrations = selectedMeal
     ? registrations.filter(r => r.mealId === selectedMeal.id)
@@ -343,8 +344,8 @@ export default function ManageScreen() {
       {/* Registrations Tab */}
       {activeTab === 'registrations' && !isMentor && (
         <ScrollView contentContainerStyle={{ padding: spacing.md }}>
-          {/* Meal Selector - Only show for non-staff */}
-          {!isStaff && (
+          {/* Meal Selector - Only show for non-staff/admin */}
+          {!isStaff && !isAdmin && (
             <View style={{ marginBottom: spacing.lg }}>
               <ThemedText variant="body" weight="semibold" style={{ marginBottom: spacing.sm }}>
                 Select Meal
@@ -383,8 +384,8 @@ export default function ManageScreen() {
             </View>
           )}
 
-          {/* Staff: Show Today's Meal Info */}
-          {isStaff && todaysMeal && (
+          {/* Staff/Admin: Show Today's Meal Info */}
+          {(isStaff || isAdmin) && todaysMeal && (
             <View style={{ marginBottom: spacing.lg }}>
               <ThemedCard style={{ padding: spacing.md, backgroundColor: `${colors.primary}10`, borderLeftWidth: 4, borderLeftColor: colors.primary }}>
                 <ThemedText variant="caption" color="textSecondary">
@@ -400,8 +401,8 @@ export default function ManageScreen() {
           {!selectedMeal ? (
             <EmptyState
               icon="document-text-outline"
-              title={isStaff ? "No Meal Today" : "Select a Meal"}
-              message={isStaff ? "There is no meal scheduled for today." : "Choose a meal from above to view registrations."}
+              title={(isStaff || isAdmin) ? "No Meal Today" : "Select a Meal"}
+              message={(isStaff || isAdmin) ? "There is no meal scheduled for today." : "Choose a meal from above to view registrations."}
             />
           ) : (
             <>
