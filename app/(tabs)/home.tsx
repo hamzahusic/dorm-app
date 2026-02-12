@@ -264,6 +264,19 @@ export default function HomeScreen() {
                       ? 'You have a clean record. Keep it up!'
                       : `You have ${userPenalties.length} active ${userPenalties.length === 1 ? 'penalty' : 'penalties'}. Please collect your registered meals.`}
                   </ThemedText>
+
+                  {/* Mentor Info */}
+                  {currentUser.reportsTo && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm }}>
+                      <Ionicons name="person-circle-outline" size={16} color={colors.primary} />
+                      <ThemedText variant="caption" color="textSecondary">
+                        Your mentor:{' '}
+                        <ThemedText variant="caption" weight="semibold" color="primary">
+                          {users.find(u => u.id === currentUser.reportsTo)?.fullName || 'Not assigned'}
+                        </ThemedText>
+                      </ThemedText>
+                    </View>
+                  )}
                 </View>
                 <View
                   style={[
