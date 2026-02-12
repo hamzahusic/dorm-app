@@ -38,6 +38,7 @@ interface AppState {
   registerForMeal: (mealId: string) => void;
   optOutOfMeal: (mealId: string) => void;
   markAsCollected: (registrationId: string, collectedVia: 'qr_scan' | 'manual' | 'late_scan') => void;
+  undoCollection: (registrationId: string) => void;
   getUserRegistrations: (userId: string) => MealRegistration[];
   getMealRegistrations: (mealId: string) => MealRegistration[];
   isUserRegisteredForMeal: (userId: string, mealId: string) => boolean;
@@ -211,6 +212,22 @@ export const useStore = create<AppState>((set, get) => ({
               collectedAt: new Date().toISOString(),
               collectedVia,
               verifiedBy: currentUser.id,
+            }
+          : r
+      ),
+    }));
+  },
+
+  undoCollection: (registrationId: string) => {
+    set((state) => ({
+      registrations: state.registrations.map(r =>
+        r.id === registrationId
+          ? {
+              ...r,
+              collected: false,
+              collectedAt: null,
+              collectedVia: null,
+              verifiedBy: null,
             }
           : r
       ),

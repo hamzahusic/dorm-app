@@ -372,57 +372,122 @@ export default function HomeScreen() {
     );
   }
 
-  // STAFF VIEW
+  // STAFF VIEW - Clean and simple
   if (currentUser.role === 'staff') {
     const todayStats = todaysMeal ? getRegistrationStats(todaysMeal.id) : null;
-    const totalStudents = users.filter(u => u.role === 'student').length;
 
     return (
       <ThemedView style={styles.container}>
         <Header title="Home" />
-        <ScrollView contentContainerStyle={{ padding: spacing.md }}>
+        <ScrollView
+          contentContainerStyle={{ padding: spacing.md }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Welcome Section */}
           <View style={{ marginBottom: spacing.lg }}>
-            <ThemedText variant="heading" weight="semibold">
-              Staff Dashboard
+            <ThemedText variant="heading" weight="bold" style={{ fontSize: 28, marginBottom: spacing.sm }}>
+              Hi, {currentUser.fullName.split(' ')[0]}!
             </ThemedText>
-            <Badge label="STAFF" variant="warning" style={{ marginTop: spacing.sm }} />
+            <Badge label="STAFF" variant="warning" size="sm" />
           </View>
 
+          {/* Today's Stats - Large and Clear */}
           <View style={{ marginBottom: spacing.xl }}>
             <View style={styles.sectionHeader}>
               <Ionicons name="stats-chart" size={24} color={colors.text} />
               <ThemedText variant="subheading" weight="semibold" style={{ marginLeft: spacing.sm }}>
-                System Overview
+                Today's Overview
               </ThemedText>
             </View>
-            <View style={[styles.statsGrid, { marginTop: spacing.md }]}>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="primary">
-                  {totalStudents}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Total Students
-                </ThemedText>
+
+            <View style={{ marginTop: spacing.md, gap: spacing.md }}>
+              {/* Registered Count */}
+              <ThemedCard style={{ padding: spacing.lg }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs }}>
+                      <Ionicons name="people" size={20} color={colors.success} />
+                      <ThemedText variant="body" weight="semibold" style={{ fontSize: 18 }}>
+                        Registered for Today
+                      </ThemedText>
+                    </View>
+                    <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 14 }}>
+                      Total students registered
+                    </ThemedText>
+                  </View>
+                  <View
+                    style={[
+                      styles.statBadge,
+                      { backgroundColor: `${colors.success}20` },
+                    ]}
+                  >
+                    <ThemedText weight="bold" color="success" style={{ fontSize: 48 }}>
+                      {todayStats?.total || 0}
+                    </ThemedText>
+                  </View>
+                </View>
               </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="success">
-                  {todayStats?.total || 0}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Registered Today
-                </ThemedText>
+
+              {/* Collected Count */}
+              <ThemedCard style={{ padding: spacing.lg }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs }}>
+                      <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                      <ThemedText variant="body" weight="semibold" style={{ fontSize: 18 }}>
+                        Already Collected
+                      </ThemedText>
+                    </View>
+                    <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 14 }}>
+                      Meals collected so far
+                    </ThemedText>
+                  </View>
+                  <View
+                    style={[
+                      styles.statBadge,
+                      { backgroundColor: `${colors.primary}20` },
+                    ]}
+                  >
+                    <ThemedText weight="bold" color="primary" style={{ fontSize: 48 }}>
+                      {todayStats?.collected || 0}
+                    </ThemedText>
+                  </View>
+                </View>
               </ThemedCard>
-              <ThemedCard style={styles.statCard}>
-                <ThemedText variant="xxxl" weight="bold" color="warning">
-                  {todayStats?.collected || 0}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  Collected
-                </ThemedText>
-              </ThemedCard>
+
+              {/* Pending Count */}
+              {todayStats && todayStats.pending > 0 && (
+                <ThemedCard style={{ padding: spacing.lg, borderLeftWidth: 4, borderLeftColor: colors.warning }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs }}>
+                        <Ionicons name="time" size={20} color={colors.warning} />
+                        <ThemedText variant="body" weight="semibold" style={{ fontSize: 18 }}>
+                          Still Pending
+                        </ThemedText>
+                      </View>
+                      <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 14 }}>
+                        Need to collect their meal
+                      </ThemedText>
+                    </View>
+                    <View
+                      style={[
+                        styles.statBadge,
+                        { backgroundColor: `${colors.warning}20` },
+                      ]}
+                    >
+                      <ThemedText weight="bold" color="warning" style={{ fontSize: 48 }}>
+                        {todayStats.pending}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </ThemedCard>
+              )}
             </View>
           </View>
 
+          {/* Today's Meal */}
           {todaysMeal && (
             <View style={{ marginBottom: spacing.xl }}>
               <View style={styles.sectionHeader}>
@@ -433,43 +498,11 @@ export default function HomeScreen() {
               </View>
               <View style={{ marginTop: spacing.md }}>
                 <MealCard meal={todaysMeal} showActions={false} />
-                {todayStats && (
-                  <ThemedCard style={{ marginTop: spacing.md }}>
-                    <ThemedText variant="body" weight="semibold">
-                      Collection Progress
-                    </ThemedText>
-                    <View style={{ marginTop: spacing.sm }}>
-                      <View style={styles.progressRow}>
-                        <ThemedText variant="caption" color="textSecondary">
-                          Registered:
-                        </ThemedText>
-                        <ThemedText variant="caption" weight="semibold">
-                          {todayStats.total}
-                        </ThemedText>
-                      </View>
-                      <View style={styles.progressRow}>
-                        <ThemedText variant="caption" color="textSecondary">
-                          Collected:
-                        </ThemedText>
-                        <ThemedText variant="caption" weight="semibold" color="success">
-                          {todayStats.collected}
-                        </ThemedText>
-                      </View>
-                      <View style={styles.progressRow}>
-                        <ThemedText variant="caption" color="textSecondary">
-                          Pending:
-                        </ThemedText>
-                        <ThemedText variant="caption" weight="semibold" color="warning">
-                          {todayStats.pending}
-                        </ThemedText>
-                      </View>
-                    </View>
-                  </ThemedCard>
-                )}
               </View>
             </View>
           )}
 
+          {/* Upcoming Meals */}
           {upcomingMeals.length > 0 && (
             <View style={{ marginBottom: spacing.xl }}>
               <View style={styles.sectionHeader}>
@@ -664,5 +697,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 4,
+  },
+  statBadge: {
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
   },
 });

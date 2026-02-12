@@ -21,11 +21,13 @@ import type { Meal } from '@/src/types';
 
 export default function ManageScreen() {
   const { spacing, colors } = useTheme();
-  const { currentUser, meals, getRegistrationStats, registrations, users, markAsCollected, getAllPenalties, deleteMeal } = useStore();
+  const { currentUser, meals, getRegistrationStats, registrations, users, markAsCollected, undoCollection, getAllPenalties, deleteMeal, getTodaysMeal } = useStore();
   const isMentor = currentUser.role === 'mentor';
+  const isStaff = currentUser.role === 'staff';
+  const canEditMeals = isMentor || isStaff;
   const [activeTab, setActiveTab] = useState<'meals' | 'registrations' | 'mentees'>('meals');
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'collected' | 'pending'>('all');
+  const [statusFilter, setStatusFilter] = useState<'collected' | 'pending'>('pending');
   const [expandedMenteeId, setExpandedMenteeId] = useState<string | null>(null);
 
   const upcomingMeals = meals.filter(m => !isPast(m.date));
@@ -36,7 +38,10 @@ export default function ManageScreen() {
   const allPenalties = getAllPenalties();
   const getMenteePenalties = (menteeId: string) => allPenalties.filter(p => p.userId === menteeId && !p.cleared);
 
-  const selectedMeal = selectedMealId ? meals.find(m => m.id === selectedMealId) : null;
+  // For staff, auto-select today's meal
+  const todaysMeal = getTodaysMeal();
+  const effectiveSelectedMealId = isStaff && activeTab === 'registrations' ? todaysMeal?.id || null : selectedMealId;
+  const selectedMeal = effectiveSelectedMealId ? meals.find(m => m.id === effectiveSelectedMealId) : null;
   const mealRegistrations = selectedMeal
     ? registrations.filter(r => r.mealId === selectedMeal.id)
     : [];
@@ -162,7 +167,7 @@ export default function ManageScreen() {
                         </ThemedText>
                       </View>
                     </View>
-                    {isMentor && (
+                    {canEditMeals && (
                       <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
                         <ThemedButton
                           variant="outline"
@@ -338,72 +343,89 @@ export default function ManageScreen() {
       {/* Registrations Tab */}
       {activeTab === 'registrations' && !isMentor && (
         <ScrollView contentContainerStyle={{ padding: spacing.md }}>
-          {/* Meal Selector */}
-          <View style={{ marginBottom: spacing.lg }}>
-            <ThemedText variant="body" weight="semibold" style={{ marginBottom: spacing.sm }}>
-              Select Meal
-            </ThemedText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {meals.slice(0, 10).map(meal => (
-                <TouchableOpacity
-                  key={meal.id}
-                  onPress={() => setSelectedMealId(meal.id)}
-                  activeOpacity={0.7}
-                >
-                  <ThemedCard
-                    style={[
-                      {
-                        marginRight: spacing.sm,
-                        minWidth: 200,
-                        backgroundColor: selectedMealId === meal.id ? `${colors.primary}15` : colors.card,
-                        borderWidth: 2,
-                        borderColor: selectedMealId === meal.id ? colors.primary : colors.border,
-                      },
-                    ]}
+          {/* Meal Selector - Only show for non-staff */}
+          {!isStaff && (
+            <View style={{ marginBottom: spacing.lg }}>
+              <ThemedText variant="body" weight="semibold" style={{ marginBottom: spacing.sm }}>
+                Select Meal
+              </ThemedText>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {meals.slice(0, 10).map(meal => (
+                  <TouchableOpacity
+                    key={meal.id}
+                    onPress={() => setSelectedMealId(meal.id)}
+                    activeOpacity={0.7}
                   >
-                    <ThemedText variant="caption" color="textSecondary">
-                      {getDayLabel(meal.date)}
-                    </ThemedText>
-                    <ThemedText variant="body" weight="semibold" style={{ marginTop: spacing.xs }}>
-                      {meal.mealName}
-                    </ThemedText>
-                    {selectedMealId === meal.id && (
-                      <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={{ position: 'absolute', top: 12, right: 12 }} />
-                    )}
-                  </ThemedCard>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+                    <ThemedCard
+                      style={[
+                        {
+                          marginRight: spacing.sm,
+                          minWidth: 200,
+                          backgroundColor: selectedMealId === meal.id ? `${colors.primary}15` : colors.card,
+                          borderWidth: 2,
+                          borderColor: selectedMealId === meal.id ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <ThemedText variant="caption" color="textSecondary">
+                        {getDayLabel(meal.date)}
+                      </ThemedText>
+                      <ThemedText variant="body" weight="semibold" style={{ marginTop: spacing.xs }}>
+                        {meal.mealName}
+                      </ThemedText>
+                      {selectedMealId === meal.id && (
+                        <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={{ position: 'absolute', top: 12, right: 12 }} />
+                      )}
+                    </ThemedCard>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Staff: Show Today's Meal Info */}
+          {isStaff && todaysMeal && (
+            <View style={{ marginBottom: spacing.lg }}>
+              <ThemedCard style={{ padding: spacing.md, backgroundColor: `${colors.primary}10`, borderLeftWidth: 4, borderLeftColor: colors.primary }}>
+                <ThemedText variant="caption" color="textSecondary">
+                  Today's Meal
+                </ThemedText>
+                <ThemedText variant="subheading" weight="bold" style={{ marginTop: spacing.xs }}>
+                  {todaysMeal.mealName}
+                </ThemedText>
+              </ThemedCard>
+            </View>
+          )}
 
           {!selectedMeal ? (
             <EmptyState
               icon="document-text-outline"
-              title="Select a Meal"
-              message="Choose a meal from above to view registrations."
+              title={isStaff ? "No Meal Today" : "Select a Meal"}
+              message={isStaff ? "There is no meal scheduled for today." : "Choose a meal from above to view registrations."}
             />
           ) : (
             <>
-              {/* Status Filter */}
+              {/* Status Filter - Only Pending and Collected */}
               <View style={[styles.filterContainer, { marginBottom: spacing.md }]}>
                 <TouchableOpacity
                   style={[
                     styles.filterButton,
                     {
-                      backgroundColor: statusFilter === 'all' ? colors.primary : colors.surface,
+                      backgroundColor: statusFilter === 'pending' ? colors.warning : colors.surface,
                       paddingVertical: spacing.sm,
                       paddingHorizontal: spacing.md,
                       borderRadius: 8,
+                      flex: 1,
                     },
                   ]}
-                  onPress={() => setStatusFilter('all')}
+                  onPress={() => setStatusFilter('pending')}
                 >
                   <ThemedText
                     variant="caption"
                     weight="semibold"
-                    style={{ color: statusFilter === 'all' ? '#FFFFFF' : colors.text }}
+                    style={{ color: statusFilter === 'pending' ? '#FFFFFF' : colors.text, textAlign: 'center' }}
                   >
-                    All ({mealRegistrations.length})
+                    Pending ({mealRegistrations.filter(r => !r.collected).length})
                   </ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -414,6 +436,8 @@ export default function ManageScreen() {
                       paddingVertical: spacing.sm,
                       paddingHorizontal: spacing.md,
                       borderRadius: 8,
+                      flex: 1,
+                      marginLeft: spacing.sm,
                     },
                   ]}
                   onPress={() => setStatusFilter('collected')}
@@ -421,29 +445,9 @@ export default function ManageScreen() {
                   <ThemedText
                     variant="caption"
                     weight="semibold"
-                    style={{ color: statusFilter === 'collected' ? '#FFFFFF' : colors.text }}
+                    style={{ color: statusFilter === 'collected' ? '#FFFFFF' : colors.text, textAlign: 'center' }}
                   >
                     Collected ({mealRegistrations.filter(r => r.collected).length})
-                  </ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.filterButton,
-                    {
-                      backgroundColor: statusFilter === 'pending' ? colors.warning : colors.surface,
-                      paddingVertical: spacing.sm,
-                      paddingHorizontal: spacing.md,
-                      borderRadius: 8,
-                    },
-                  ]}
-                  onPress={() => setStatusFilter('pending')}
-                >
-                  <ThemedText
-                    variant="caption"
-                    weight="semibold"
-                    style={{ color: statusFilter === 'pending' ? '#FFFFFF' : colors.text }}
-                  >
-                    Pending ({mealRegistrations.filter(r => !r.collected).length})
                   </ThemedText>
                 </TouchableOpacity>
               </View>
@@ -494,13 +498,38 @@ export default function ManageScreen() {
                             />
                           )}
                         </View>
-                        {!registration.collected && (
+                        {!registration.collected ? (
                           <ThemedButton
                             variant="secondary"
                             size="sm"
                             onPress={() => markAsCollected(registration.id, 'manual')}
                           >
                             Collect
+                          </ThemedButton>
+                        ) : (
+                          <ThemedButton
+                            variant="outline"
+                            size="sm"
+                            onPress={() => {
+                              Alert.alert(
+                                'Undo Collection',
+                                `Undo collection for ${user.fullName}?`,
+                                [
+                                  { text: 'Cancel', style: 'cancel' },
+                                  {
+                                    text: 'Undo',
+                                    style: 'destructive',
+                                    onPress: () => {
+                                      undoCollection(registration.id);
+                                      Alert.alert('Success', 'Collection undone successfully');
+                                    }
+                                  }
+                                ]
+                              );
+                            }}
+                            icon={<Ionicons name="arrow-undo" size={16} color={colors.error} />}
+                          >
+                            Undo
                           </ThemedButton>
                         )}
                       </View>
