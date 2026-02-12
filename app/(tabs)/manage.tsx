@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { ThemedView } from '@/src/components/themed/ThemedView';
 import { ThemedText } from '@/src/components/themed/ThemedText';
@@ -30,6 +30,7 @@ export default function ManageScreen() {
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'collected' | 'pending'>('pending');
   const [expandedMenteeId, setExpandedMenteeId] = useState<string | null>(null);
+  const [registrationSearchQuery, setRegistrationSearchQuery] = useState('');
 
   const upcomingMeals = meals.filter(m => !isPast(m.date));
   const pastMeals = meals.filter(m => isPast(m.date));
@@ -48,8 +49,23 @@ export default function ManageScreen() {
     : [];
 
   const filteredRegistrations = mealRegistrations.filter(r => {
+    // Filter by status
     if (statusFilter === 'collected') return r.collected;
-    if (statusFilter === 'pending') return !r.collected;
+    if (statusFilter === 'pending') {
+      if (r.collected) return false;
+
+      // Apply search filter for pending registrations only
+      if (registrationSearchQuery.trim()) {
+        const user = users.find(u => u.id === r.userId);
+        if (user) {
+          const query = registrationSearchQuery.toLowerCase();
+          return user.fullName.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
+        }
+        return false;
+      }
+
+      return true;
+    }
     return true;
   });
 
@@ -453,12 +469,47 @@ export default function ManageScreen() {
                 </TouchableOpacity>
               </View>
 
+              {/* Search Input - Only for Pending */}
+              {statusFilter === 'pending' && (
+                <View style={{ position: 'relative', marginBottom: spacing.md }}>
+                  <TextInput
+                    style={[
+                      styles.searchInput,
+                      {
+                        backgroundColor: colors.surface,
+                        color: colors.text,
+                        borderColor: colors.border,
+                        borderRadius: 8,
+                        padding: spacing.md,
+                        paddingLeft: 42,
+                        fontSize: 16,
+                        height: 48,
+                      },
+                    ]}
+                    placeholder="Search pending by name or email..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={registrationSearchQuery}
+                    onChangeText={setRegistrationSearchQuery}
+                  />
+                  <Ionicons
+                    name="search"
+                    size={20}
+                    color={colors.textSecondary}
+                    style={{ position: 'absolute', left: 12, top: 14 }}
+                  />
+                </View>
+              )}
+
               {/* Registrations List */}
               {filteredRegistrations.length === 0 ? (
                 <EmptyState
                   icon="person-outline"
                   title="No Registrations"
-                  message={`No ${statusFilter !== 'all' ? statusFilter : ''} registrations for this meal.`}
+                  message={
+                    statusFilter === 'pending' && registrationSearchQuery.trim()
+                      ? 'No pending registrations found matching your search.'
+                      : `No ${statusFilter !== 'all' ? statusFilter : ''} registrations for this meal.`
+                  }
                 />
               ) : (
                 filteredRegistrations.map(registration => {
@@ -598,5 +649,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  searchInput: {
+    borderWidth: 1,
   },
 });

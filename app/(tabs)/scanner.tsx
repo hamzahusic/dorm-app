@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Platform, Alert, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, Alert, TouchableOpacity, TextInput } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { ThemedView } from '@/src/components/themed/ThemedView';
@@ -33,6 +33,7 @@ export default function ScannerScreen() {
   const [scanned, setScanned] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
 
   const todaysMeal = getTodaysMeal();
   const todayStats = todaysMeal ? getRegistrationStats(todaysMeal.id) : null;
@@ -60,7 +61,15 @@ export default function ScannerScreen() {
     ? users
         .filter(u => {
           const reg = registrations.find(r => r.userId === u.id && r.mealId === todaysMeal.id);
-          return reg && !reg.collected;
+          if (!reg || reg.collected) return false;
+
+          // Filter by search query
+          if (studentSearchQuery.trim()) {
+            const query = studentSearchQuery.toLowerCase();
+            return u.fullName.toLowerCase().includes(query) || u.email.toLowerCase().includes(query);
+          }
+
+          return true;
         })
         .sort((a, b) => a.fullName.localeCompare(b.fullName))
     : [];
@@ -268,17 +277,49 @@ export default function ScannerScreen() {
               </ThemedText>
             </View>
             <ThemedCard style={{ marginTop: spacing.md }}>
+              {/* Search Input - Always visible */}
+              <View style={{ position: 'relative', marginBottom: spacing.md }}>
+                <TextInput
+                  style={[
+                    styles.searchInput,
+                    {
+                      backgroundColor: colors.surface,
+                      color: colors.text,
+                      borderColor: colors.border,
+                      borderRadius: 8,
+                      padding: spacing.md,
+                      paddingLeft: 42,
+                      fontSize: 16,
+                      height: 48,
+                    },
+                  ]}
+                  placeholder="Search by name or email..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={studentSearchQuery}
+                  onChangeText={setStudentSearchQuery}
+                />
+                <Ionicons
+                  name="search"
+                  size={20}
+                  color={colors.textSecondary}
+                  style={{ position: 'absolute', left: 12, top: 14 }}
+                />
+              </View>
+
               {registeredStudents.length === 0 ? (
                 <View style={{ paddingVertical: spacing.lg }}>
                   <ThemedText color="textSecondary" style={{ textAlign: 'center' }}>
-                    All registered students have collected their meals.
+                    {studentSearchQuery.trim()
+                      ? 'No students found matching your search.'
+                      : 'All registered students have collected their meals.'}
                   </ThemedText>
                 </View>
               ) : (
                 <>
-                  <ThemedText variant="body" weight="semibold" style={{ marginBottom: spacing.md }}>
+                  <ThemedText variant="body" weight="semibold" style={{ marginBottom: spacing.sm }}>
                     Select Student ({registeredStudents.length} pending)
                   </ThemedText>
+
                   <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
                     {registeredStudents.map(student => (
                       <TouchableOpacity
@@ -508,5 +549,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  searchInput: {
+    borderWidth: 1,
   },
 });
