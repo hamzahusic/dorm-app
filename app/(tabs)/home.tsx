@@ -46,6 +46,8 @@ export default function HomeScreen() {
   const unreadNotifications = getUnreadCount(currentUser.id);
 
   const isRegisteredForToday = todaysMeal ? isUserRegisteredForMeal(currentUser.id, todaysMeal.id) : false;
+  const todayRegistration = todaysMeal ? registrations.find(r => r.userId === currentUser.id && r.mealId === todaysMeal.id) : null;
+  const hasCollectedToday = todayRegistration?.collected ?? false;
   const registrationStatus = getRegistrationStatus();
   const canRegister = isBeforeDeadline();
 
@@ -204,6 +206,52 @@ export default function HomeScreen() {
                   </View>
                 </View>
 
+                {/* Collection Status Banner - Only when registered */}
+                {isRegisteredForToday && (
+                  <View
+                    style={[
+                      styles.statusBanner,
+                      {
+                        backgroundColor: hasCollectedToday
+                          ? `${colors.success}20`
+                          : `${colors.warning}20`,
+                        marginBottom: spacing.md,
+                        padding: spacing.sm,
+                        borderRadius: 8,
+                      },
+                    ]}
+                  >
+                    <View style={styles.statusRow}>
+                      <Ionicons
+                        name={hasCollectedToday ? 'checkmark-done-circle' : 'time'}
+                        size={20}
+                        color={hasCollectedToday ? colors.success : colors.warning}
+                      />
+                      <View style={{ flex: 1, marginLeft: spacing.sm }}>
+                        {hasCollectedToday ? (
+                          <>
+                            <ThemedText variant="body" weight="bold" color="success">
+                              ✓ Meal Collected
+                            </ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">
+                              You have collected your meal
+                            </ThemedText>
+                          </>
+                        ) : (
+                          <>
+                            <ThemedText variant="body" weight="bold" color="warning">
+                              Not Collected Yet
+                            </ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">
+                              Scan QR code at dinner to collect
+                            </ThemedText>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                )}
+
                 {/* Meal Info */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, gap: spacing.sm }}>
                   <View style={[styles.dateBadge, { backgroundColor: `${colors.primary}15`, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }]}>
@@ -224,8 +272,8 @@ export default function HomeScreen() {
                   </ThemedText>
                 )}
 
-                {/* Action Button */}
-                {canRegister && <RegistrationButton mealId={todaysMeal.id} mealDate={todaysMeal.date} />}
+                {/* Action Button - Only show Register, no opt-out */}
+                {canRegister && !isRegisteredForToday && <RegistrationButton mealId={todaysMeal.id} mealDate={todaysMeal.date} />}
               </ThemedCard>
             ) : (
               <EmptyState
