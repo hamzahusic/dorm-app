@@ -16,8 +16,8 @@ import { CountdownTimer } from '@/src/components/common/CountdownTimer';
 import { useStore } from '@/src/store';
 import { useTheme } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { getDayLabel, formatDate, isToday } from '@/src/utils/dateHelpers';
-import { isBeforeDeadline, isDuringService, getRegistrationStatus } from '@/src/utils/timeHelpers';
+import { getDayLabel } from '@/src/utils/dateHelpers';
+import { isBeforeDeadline, isDuringService } from '@/src/utils/timeHelpers';
 import { MEAL_TIMES } from '@/src/constants/app';
 
 export default function HomeScreen() {
@@ -49,7 +49,6 @@ export default function HomeScreen() {
   const isRegisteredForToday = todaysMeal ? isUserRegisteredForMeal(currentUser.id, todaysMeal.id) : false;
   const todayRegistration = todaysMeal ? registrations.find(r => r.userId === currentUser.id && r.mealId === todaysMeal.id) : null;
   const hasCollectedToday = todayRegistration?.collected ?? false;
-  const registrationStatus = getRegistrationStatus();
   const canRegister = isBeforeDeadline();
 
   const onRefresh = () => {
@@ -839,23 +838,6 @@ const styles = StyleSheet.create({
     borderRadius: 35,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
   },
   statBadge: {
     minWidth: 80,

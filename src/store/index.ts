@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { format } from 'date-fns';
-import type { User, Meal, MealRegistration, Penalty, Notification, QRSession, UserRole } from '@/src/types';
+import type { User, Meal, MealRegistration, Penalty, UserRole } from '@/src/types';
 import { generateAllMockData } from './mockData';
 
 interface AppState {
@@ -15,9 +15,7 @@ interface AppState {
   meals: Meal[];
   registrations: MealRegistration[];
   penalties: Penalty[];
-  notifications: Notification[];
-  qrSessions: QRSession[];
-  isLoading: boolean;
+  notifications: { userId: string; read: boolean }[];
 
   // User Actions
   setCurrentUserRole: (role: UserRole) => void;
@@ -32,15 +30,12 @@ interface AppState {
   getMealById: (id: string) => Meal | undefined;
   getTodaysMeal: () => Meal | undefined;
   getUpcomingMeals: (limit?: number) => Meal[];
-  getPastMeals: (limit?: number) => Meal[];
 
   // Registration Actions
   registerForMeal: (mealId: string) => void;
   optOutOfMeal: (mealId: string) => void;
   markAsCollected: (registrationId: string, collectedVia: 'qr_scan' | 'manual' | 'late_scan') => void;
   undoCollection: (registrationId: string) => void;
-  getUserRegistrations: (userId: string) => MealRegistration[];
-  getMealRegistrations: (mealId: string) => MealRegistration[];
   isUserRegisteredForMeal: (userId: string, mealId: string) => boolean;
   getRegistrationStats: (mealId: string) => { total: number; collected: number; pending: number };
 
@@ -50,14 +45,7 @@ interface AppState {
   getAllPenalties: () => Penalty[];
 
   // Notification Actions
-  getNotificationsForUser: (userId: string) => Notification[];
-  markNotificationAsRead: (id: string) => void;
   getUnreadCount: (userId: string) => number;
-
-  // QR Session Actions
-  createQRSession: (mealId: string) => QRSession;
-  validateQRSession: (token: string) => QRSession | null;
-  getActiveQRSession: (mealId: string) => QRSession | null;
 }
 
 // Generate initial mock data
@@ -74,8 +62,6 @@ export const useStore = create<AppState>((set, get) => ({
   registrations: mockData.registrations,
   penalties: mockData.penalties,
   notifications: mockData.notifications,
-  qrSessions: mockData.qrSessions,
-  isLoading: false,
 
   // User Actions
   setCurrentUserRole: (role: UserRole) => {
@@ -160,13 +146,6 @@ export const useStore = create<AppState>((set, get) => ({
       .slice(0, limit);
   },
 
-  getPastMeals: (limit = 30) => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    return get()
-      .meals.filter(m => m.date < today)
-      .slice(0, limit);
-  },
-
   // Registration Actions
   registerForMeal: (mealId: string) => {
     const state = get();
@@ -234,14 +213,6 @@ export const useStore = create<AppState>((set, get) => ({
     }));
   },
 
-  getUserRegistrations: (userId: string) => {
-    return get().registrations.filter(r => r.userId === userId);
-  },
-
-  getMealRegistrations: (mealId: string) => {
-    return get().registrations.filter(r => r.mealId === mealId);
-  },
-
   isUserRegisteredForMeal: (userId: string, mealId: string) => {
     return get().registrations.some(r => r.userId === userId && r.mealId === mealId);
   },
@@ -277,69 +248,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // Notification Actions
-  getNotificationsForUser: (userId: string) => {
-    return get().notifications.filter(n => n.userId === userId);
-  },
-
-  markNotificationAsRead: (id: string) => {
-    set((state) => ({
-      notifications: state.notifications.map(n =>
-        n.id === id ? { ...n, read: true } : n
-      ),
-    }));
-  },
-
   getUnreadCount: (userId: string) => {
     return get().notifications.filter(n => n.userId === userId && !n.read).length;
-  },
-
-  // QR Session Actions
-  createQRSession: (mealId: string) => {
-    const currentUser = get().currentUser;
-    const meal = get().getMealById(mealId);
-
-    if (!meal) {
-      throw new Error('Meal not found');
-    }
-
-    const expiresAt = new Date(`${meal.date}T20:00:00`);
-
-    const newSession: QRSession = {
-      id: `qr-session-${Date.now()}`,
-      mealId,
-      sessionToken: `QR-${mealId}-${Date.now()}`,
-      createdBy: currentUser.id,
-      expiresAt: expiresAt.toISOString(),
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    set((state) => ({
-      qrSessions: [...state.qrSessions, newSession],
-    }));
-
-    return newSession;
-  },
-
-  validateQRSession: (token: string) => {
-    const session = get().qrSessions.find(s => s.sessionToken === token);
-
-    if (!session) return null;
-
-    const now = new Date();
-    const expiresAt = new Date(session.expiresAt);
-
-    if (now > expiresAt || !session.isActive) {
-      return null;
-    }
-
-    return session;
-  },
-
-  getActiveQRSession: (mealId: string) => {
-    const sessions = get().qrSessions.filter(s => s.mealId === mealId && s.isActive);
-    const now = new Date();
-
-    return sessions.find(s => new Date(s.expiresAt) > now) || null;
   },
 }));

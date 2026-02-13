@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
+import { TouchableOpacity, ActivityIndicator, ViewStyle } from 'react-native';
 import { useTheme } from '@/src/theme';
 import { ThemedText } from './ThemedText';
 
@@ -127,5 +127,3 @@ export function ThemedButton({
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({});

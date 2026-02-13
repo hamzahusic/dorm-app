@@ -74,7 +74,7 @@ export function PenaltyCard({ penalty, showClearButton = false, onClear }: Penal
       </ThemedText>
 
       {penalty.cleared && penalty.clearReason && (
-        <View style={[styles.clearedSection, { marginTop: spacing.md, padding: spacing.sm, backgroundColor: colors.surface, borderRadius: 8 }]}>
+        <View style={{ marginTop: spacing.md, padding: spacing.sm, backgroundColor: colors.surface, borderRadius: 8 }}>
           <ThemedText variant="caption" weight="semibold">
             Clear Reason:
           </ThemedText>
@@ -115,5 +115,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  clearedSection: {},
 });

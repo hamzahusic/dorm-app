@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import { ViewStyle } from 'react-native';
 import { ThemedView } from './ThemedView';
 import { useTheme } from '@/src/theme';
 
@@ -22,5 +22,3 @@ export function ThemedCard({ children, style }: ThemedCardProps) {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({});
