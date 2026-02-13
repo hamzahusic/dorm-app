@@ -13,7 +13,6 @@ import { MealCard } from '@/src/components/meal/MealCard';
 import { PenaltyCard } from '@/src/components/penalty/PenaltyCard';
 import { EmptyState } from '@/src/components/common/EmptyState';
 import { CountdownTimer } from '@/src/components/common/CountdownTimer';
-import { RegistrationButton } from '@/src/components/registration/RegistrationButton';
 import { useStore } from '@/src/store';
 import { useTheme } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +35,8 @@ export default function HomeScreen() {
     meals,
     isUserRegisteredForMeal,
     toggleWantsMeal,
+    registerForMeal,
+    optOutOfMeal,
   } = useStore();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -61,11 +62,21 @@ export default function HomeScreen() {
   const handleWantsMealToggle = () => {
     const newValue = !currentUser.wantsMeal;
     toggleWantsMeal();
+
+    // Register or unregister for today's meal based on toggle
+    if (todaysMeal && canRegister) {
+      if (newValue && !isRegisteredForToday) {
+        registerForMeal(todaysMeal.id);
+      } else if (!newValue && isRegisteredForToday) {
+        optOutOfMeal(todaysMeal.id);
+      }
+    }
+
     Alert.alert(
       '✅ Preference Updated',
       newValue
-        ? 'Meal registration enabled! Meals for the next days will be automatically registered. You still need to scan QR code at dinner time.'
-        : 'Meal registration disabled. You\'ll need to manually register for each meal and scan QR code at dinner time.',
+        ? 'Meal registration enabled! You are now registered for today\'s meal and upcoming meals will be auto-registered.'
+        : 'Meal registration disabled. You have been unregistered from today\'s meal and upcoming meals will not auto-register.',
       [{ text: 'Got it' }]
     );
   };
@@ -272,8 +283,6 @@ export default function HomeScreen() {
                   </ThemedText>
                 )}
 
-                {/* Action Button - Only show Register, no opt-out */}
-                {canRegister && !isRegisteredForToday && <RegistrationButton mealId={todaysMeal.id} mealDate={todaysMeal.date} />}
               </ThemedCard>
             ) : (
               <EmptyState
@@ -403,9 +412,9 @@ export default function HomeScreen() {
                           {isReg ? (
                             <Badge label="✓ Registered" variant="success" size="sm" />
                           ) : willAutoRegister ? (
-                            <Badge label="Will auto-register" variant="info" size="sm" />
+                            <Badge label="Will Auto-Register" variant="info" size="sm" />
                           ) : (
-                            <Badge label="Not registered" variant="neutral" size="sm" />
+                            <Badge label="Will Not Register" variant="neutral" size="sm" />
                           )}
                         </View>
                       </View>
