@@ -2,7 +2,7 @@
  * Scanner Screen - QR code scanning for meal collection
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Platform, Alert, TouchableOpacity, TextInput } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
@@ -36,6 +36,7 @@ export default function ScannerScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
+  const isProcessingScan = useRef(false);
 
   const todaysMeal = getTodaysMeal();
   const todayStats = todaysMeal ? getRegistrationStats(todaysMeal.id) : null;
@@ -78,7 +79,8 @@ export default function ScannerScreen() {
     : [];
 
   const handleBarCodeScanned = ({ data }: { type: string; data: string }) => {
-    if (scanned) return;
+    if (isProcessingScan.current) return;
+    isProcessingScan.current = true;
 
     setScanned(true);
     setShowCamera(false);
@@ -96,6 +98,7 @@ export default function ScannerScreen() {
           text: 'OK',
           onPress: () => {
             setScanned(false);
+            isProcessingScan.current = false;
           },
         },
       ]
