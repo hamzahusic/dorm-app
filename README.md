@@ -1,379 +1,269 @@
-# Dorm Dinner Tracking App
+# Dorm Dinner Tracker
 
-A comprehensive React Native mobile application for managing meal registrations and tracking in a dormitory with 126 students. Built with Expo, TypeScript, and modern React Native best practices.
+A mobile app for managing daily meal registrations in a student dormitory. Students register for dinner before a daily deadline, staff scan QR codes to mark meals as collected, and admins track statistics and no-show penalties.
 
-## 📱 Overview
-
-This frontend-only application provides a complete meal management system with role-based access for students, mentors, staff, and administrators. It includes meal registration, QR code scanning (placeholder), penalty tracking, and comprehensive analytics.
-
-**Backend Integration:** This app is designed to integrate with an ASP.NET + SQL Server backend (to be built separately). All data is currently mocked for development and testing.
+Built with **React Native + Expo**. Fully functional with mock data — no backend required to run.
 
 ---
 
-## ✨ Features
+## Table of Contents
 
-### 👨‍🎓 Student Features
+- [How It Works](#how-it-works)
+- [User Roles](#user-roles)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Development](#development)
+- [Backend Integration](#backend-integration)
+- [Known Limitations](#known-limitations)
+
+---
+
+## How It Works
+
+The dorm has 126 students who must register for dinner each day before **2:00 PM**. The flow:
+
+1. Students open the app and register (or opt out) for the day's meal
+2. At dinner time, staff scan students' QR codes to mark meals as collected
+3. Students who registered but didn't show up receive a **no-show penalty**
+4. Mentors can monitor their students and clear penalties
+5. Admins have full visibility into registrations, penalties, and user management
+
+All data is currently in-memory mock data. The app is designed to plug into an ASP.NET + SQL Server backend.
+
+---
+
+## User Roles
+
+The app has four roles. A floating **Role Switcher** button (bottom-right, dev only) lets you switch between them instantly — no login needed.
+
+### Student
 - View today's meal and upcoming meals (7 days)
-- Register or opt-out of meals
-- Track personal penalties
-- View notification badges
-- Haptic feedback on interactions
+- Register or opt out before the 2 PM deadline
+- View personal penalties and notification badges
 
-### 👥 Mentor Features
-- View mentee statistics (registrations, penalties)
-- Monitor today's meal registrations
-- Clear mentee penalties
-- Track mentee meal participation
+### Mentor
+- See all assigned students, their registration status, and penalties
+- Create and manage meals
+- Clear penalties for their students
 
-### 👨‍🍳 Staff Features
-- View system-wide meal statistics
-- Scan QR codes for meal collection (manual mode available)
-- Manage meal registrations
-- Mark meals as collected
-- View recent collections
+### Staff
+- Scan QR codes at the cafeteria to mark meals as collected
+- Manual fallback mode for when the scanner doesn't work
+- View recent collections and system statistics
 
-### 🔐 Admin Features
-- User management (activate/deactivate users)
-- View and filter all users by role
-- Penalty management (view, filter, clear)
-- System settings overview
-- Comprehensive analytics dashboard
+### Admin
+- Full access: user management, penalty management, meal creation
+- Activate or deactivate user accounts
+- System-wide analytics dashboard
 
-### 🎨 UI/UX Features
-- **Dark Mode:** Automatic light/dark theme based on system preference
-- **Role Switcher:** Dev tool to test all user roles (floating button)
-- **Responsive Design:** Works on iOS, Android, and Web
-- **Haptic Feedback:** Touch feedback on key interactions
-- **Empty States:** Helpful messages when no data is available
-- **Loading States:** Visual feedback during operations
+**Tab visibility by role:**
+
+| Tab | Student | Mentor | Staff | Admin |
+|---|---|---|---|---|
+| Home | Yes | Yes | Yes | Yes |
+| Scanner | Yes | Yes | - | - |
+| Manage | - | Yes | Yes | Yes |
+| Admin | - | - | - | Yes |
 
 ---
 
-## 🏗️ Architecture
+## Tech Stack
 
-### Tech Stack
-- **Framework:** Expo SDK 54 with React Native 0.81
-- **Navigation:** Expo Router (file-based routing)
-- **State Management:** Zustand (lightweight, no providers)
-- **Styling:** Custom themed components with automatic dark mode
-- **Date Utilities:** date-fns
-- **HTTP Client:** Axios (for future API integration)
-- **TypeScript:** Strict mode enabled
+| Category | Technology |
+|---|---|
+| Framework | React Native 0.81 + Expo SDK 54 |
+| Language | TypeScript 5.9 (strict mode) |
+| Routing | Expo Router 6 (file-based, like Next.js) |
+| State Management | Zustand 5 |
+| HTTP Client | Axios 1.13 (configured, not active yet) |
+| Camera / QR | expo-camera, react-native-qrcode-svg |
+| Animation | react-native-reanimated 4 |
+| Date Handling | date-fns 4 |
+| Icons | @expo/vector-icons (Ionicons) |
+| Haptics | expo-haptics |
 
-### Folder Structure
+---
+
+## Project Structure
+
 ```
 dorm-app/
-├── app/                          # Expo Router file-based routing
-│   ├── _layout.tsx               # Root layout with ThemeProvider
-│   ├── index.tsx                 # Redirect to home
-│   ├── (tabs)/                   # Tab navigation
-│   │   ├── _layout.tsx           # Role-based tab layout
-│   │   ├── home.tsx              # Dashboard (all roles)
-│   │   ├── scanner.tsx           # QR Scanner (student, mentor)
-│   │   ├── manage.tsx            # Meal management (mentor, staff, admin)
-│   │   └── admin.tsx             # Admin panel (admin only)
+├── app/                        # Screens — Expo Router file-based routing
+│   ├── _layout.tsx             # Root layout, wraps app in ThemeProvider
+│   ├── index.tsx               # Redirects to home tab
+│   ├── (tabs)/
+│   │   ├── _layout.tsx         # Tab bar with role-based visibility
+│   │   ├── home.tsx            # Dashboard (all roles)
+│   │   ├── scanner.tsx         # QR scanner (students & staff)
+│   │   ├── manage.tsx          # Meal management (mentors, staff, admins)
+│   │   └── admin.tsx           # Admin panel (admins only)
 │   └── modal/
-│       └── create-meal.tsx       # Create meal modal
+│       ├── create-meal.tsx     # Create meal modal
+│       └── edit-meal.tsx       # Edit meal modal
+│
 ├── src/
-│   ├── types/
-│   │   └── index.ts              # TypeScript interfaces
+│   ├── types/index.ts          # All TypeScript interfaces (User, Meal, etc.)
+│   │
 │   ├── store/
-│   │   ├── index.ts              # Zustand store
-│   │   └── mockData.ts           # Mock data generator
+│   │   ├── index.ts            # Zustand store — all state and actions
+│   │   └── mockData.ts         # Generates realistic mock data on startup
+│   │
 │   ├── components/
-│   │   ├── themed/               # Themed wrapper components
-│   │   ├── common/               # Reusable UI components
-│   │   ├── meal/                 # Meal-specific components
-│   │   ├── registration/         # Registration components
-│   │   ├── penalty/              # Penalty components
-│   │   └── dev/                  # Development tools
+│   │   ├── themed/             # Base components that respect the theme
+│   │   ├── common/             # Reusable UI (Header, Badge, StatCard…)
+│   │   ├── home/               # Role-specific home screen content
+│   │   ├── meal/               # Meal card and detail components
+│   │   ├── registration/       # Register / opt-out button logic
+│   │   ├── penalty/            # Penalty list and management UI
+│   │   ├── scanner/            # QR scanner UI
+│   │   ├── manage/             # Meal & registration management tabs
+│   │   ├── admin/              # Admin-only management tabs
+│   │   └── dev/                # RoleSwitcher (visible in __DEV__ only)
+│   │
+│   ├── services/api/           # API layer — ready to connect to backend
+│   │   ├── client.ts           # Axios instance with base URL config
+│   │   ├── mealService.ts
+│   │   ├── userService.ts
+│   │   ├── registrationService.ts
+│   │   └── penaltyService.ts
+│   │
 │   ├── theme/
-│   │   ├── colors.ts             # Color system (light/dark)
-│   │   ├── spacing.ts            # Spacing constants
-│   │   ├── typography.ts         # Font sizes and weights
-│   │   ├── ThemeProvider.tsx     # Theme context provider
-│   │   └── index.ts              # Theme exports
-│   ├── constants/
-│   │   └── app.ts                # App constants
+│   │   ├── colors.ts           # Light and dark color palettes
+│   │   ├── spacing.ts          # 8pt grid spacing constants
+│   │   ├── typography.ts       # Font sizes and weights
+│   │   └── ThemeProvider.tsx   # Reads system color scheme, exposes useTheme()
+│   │
+│   ├── constants/app.ts        # Meal times, penalty config, app-wide constants
+│   │
 │   └── utils/
-│       ├── dateHelpers.ts        # Date formatting and utilities
-│       ├── roleHelpers.ts        # Role-based permissions
-│       └── validation.ts         # Form validation
-├── assets/                       # App images and icons
-└── package.json
+│       ├── dateHelpers.ts      # Date formatting utilities
+│       ├── timeHelpers.ts      # Deadline checks, service hours
+│       ├── roleHelpers.ts      # Permission checks per role
+│       └── validation.ts       # Form validation
+│
+├── assets/images/              # App icons and splash screen assets
+├── app.json                    # Expo configuration (name, icons, plugins)
+├── package.json
+└── tsconfig.json               # TypeScript strict config, @/* path alias
 ```
-
-### Key Design Decisions
-
-**Why Expo Router over React Navigation?**
-- Modern, file-based routing (like Next.js)
-- Type-safe navigation with TypeScript
-- Better code splitting and lazy loading
-- Already configured in new Expo projects
-
-**Why Zustand over Redux?**
-- Lightweight (7KB vs 40KB+)
-- No providers or boilerplate
-- Simple hooks-based API
-- Perfect for this app's complexity level
-
-**Why Custom Components over UI Library?**
-- Full control over theming and dark mode
-- Smaller bundle size (no 500KB+ UI library)
-- Easier to customize for specific needs
-- Better performance
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- Node.js 18+ and npm/yarn
-- iOS Simulator (macOS) or Android Emulator
-- Expo CLI (automatically installed)
 
-### Installation
+- **Node.js 18+**
+- **Expo Go** app on your phone, or an iOS/Android simulator set up locally
 
-1. **Clone the repository:**
-   ```bash
-   cd /Users/hamza/Desktop/dorm-app
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm start
-   ```
-
-4. **Run on iOS:**
-   ```bash
-   npm run ios
-   ```
-
-5. **Run on Android:**
-   ```bash
-   npm run android
-   ```
-
-6. **Run on Web:**
-   ```bash
-   npm run web
-   ```
-
----
-
-## 🎭 Using the Role Switcher
-
-The app includes a **floating button** (bottom-right corner) that allows you to test different user roles in development mode.
-
-**How to use:**
-1. Launch the app
-2. Look for the floating circular button above the tab bar
-3. Tap it to open the role switcher modal
-4. Select a role: Student, Mentor, Staff, or Admin
-5. The app will instantly update to show that role's interface
-
-**Tab Visibility by Role:**
-- **Student:** Home, Scanner tabs
-- **Mentor:** Home, Scanner, Manage tabs
-- **Staff:** Home, Manage tabs
-- **Admin:** Home, Manage, Admin tabs
-
----
-
-## 📊 Mock Data
-
-The app generates realistic mock data on startup:
-
-- **126 Students** with unique names and emails
-- **12 Mentors** (10-11 students per mentor)
-- **5 Staff Members**
-- **2 Administrators**
-- **37 Meals** (30 past, today, 6 future)
-- **~80% Registration Rate** for meals
-- **~8% No-Show Penalties**
-- **Notifications** for penalty alerts
-
-All data is stored in-memory and resets when the app reloads.
-
----
-
-## 🎨 Theme System
-
-### Automatic Dark Mode
-The app automatically detects your system's color scheme and applies the appropriate theme:
-- **Light Mode:** Clean whites and subtle grays
-- **Dark Mode:** True black with muted colors
-
-To test dark mode:
-1. Change your device/simulator system appearance
-2. App will automatically update
-
-### Color Palette
-- **Primary:** Blue (#2563EB) - Main actions
-- **Secondary:** Green (#10B981) - Success states
-- **Error:** Red (#EF4444) - Errors and penalties
-- **Warning:** Amber (#F59E0B) - Warnings
-- **Info:** Light Blue (#3B82F6) - Informational
-
----
-
-## 🔌 Future Backend Integration
-
-When the ASP.NET backend is ready:
-
-### 1. Create API Service Layer
-```typescript
-// src/services/api.ts
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: 'https://api.yourdorm.com',
-  timeout: 10000,
-});
-
-export const mealService = {
-  getAll: () => api.get<Meal[]>('/meals'),
-  create: (meal: CreateMealDto) => api.post<Meal>('/meals', meal),
-  // ... more endpoints
-};
-```
-
-### 2. Update Store Actions
-- Make actions async
-- Add loading/error states
-- Replace mock data with API calls
-- Implement optimistic updates
-
-### 3. Add Authentication
-- Login/logout functionality
-- Token storage (AsyncStorage/SecureStore)
-- Axios interceptor for auth headers
-- Protected routes
-
-### 4. Add Real-time Updates
-- WebSocket/SignalR integration
-- Live meal registrations
-- Real-time notifications
-
-### 5. Add QR Scanning
-- Install `expo-camera`
-- Implement QR code generation (backend)
-- Scanner screen integration
-- Session validation
-
----
-
-## 🐛 Known Limitations
-
-1. **No Real QR Scanning:** Placeholder UI only (requires `expo-camera`)
-2. **No Authentication:** App starts directly (no login)
-3. **No Data Persistence:** Mock data resets on reload
-4. **No Real-time Updates:** Data is static (no WebSocket)
-5. **No Backend API:** All data is mocked in-memory
-6. **No Image Uploads:** No meal photos or user avatars
-7. **No Email Notifications:** Notification system is UI-only
-
----
-
-## 📝 Scripts
+### Install and run
 
 ```bash
-npm start           # Start Expo dev server
-npm run ios         # Run on iOS simulator
-npm run android     # Run on Android emulator
-npm run web         # Run on web browser
-npm run lint        # Run ESLint
+# Install dependencies
+npm install
+
+# Start the dev server
+npm start
+```
+
+Once the server starts:
+- Press `i` — open in iOS Simulator
+- Press `a` — open in Android Emulator
+- Press `w` — open in browser
+- Scan the QR code with **Expo Go** on your phone
+
+No `.env` file or backend needed. The app generates all data in-memory on startup.
+
+### Available scripts
+
+```bash
+npm start          # Start Expo dev server
+npm run ios        # Open directly in iOS Simulator
+npm run android    # Open directly in Android Emulator
+npm run web        # Open in browser
+npm run lint       # Run ESLint
 ```
 
 ---
 
-## 🧪 Testing the App
+## Development
 
-### Student Flow
-1. Switch to **Student** role
-2. View today's meal card
-3. Click "Register" → Button changes to "Opt Out"
-4. Click "Opt Out" → Button changes back to "Register"
-5. View upcoming meals list
-6. Check penalties section (some students have penalties)
+### Mock data
 
-### Mentor Flow
-1. Switch to **Mentor** role
-2. View mentee statistics (total, registered today, penalties)
-3. See today's meal overview
-4. View mentee penalties list
-5. Clear a penalty (if any exist)
+On startup, `src/store/mockData.ts` generates:
+- 126 students, 12 mentors, 5 staff, 2 admins
+- 37 meals (30 past, 1 today, 6 upcoming)
+- ~80% registration rate per meal
+- ~8% no-show penalties
+- ~92% of past registrations marked as collected
 
-### Staff Flow
-1. Switch to **Staff** role
-2. View system statistics (students, registrations, collections)
-3. Navigate to **Scanner** tab
-4. Select a student from pending list
-5. Click "Mark as Collected"
-6. See student appear in recent collections
+All data is in-memory and resets on every reload.
 
-### Admin Flow
-1. Switch to **Admin** role
-2. View system-wide statistics
-3. Navigate to **Admin** tab
-4. Filter users by role
-5. Activate/deactivate a user
-6. View and clear penalties
-7. Check system settings
+### State management
 
-### Dark Mode
-1. Change system appearance to dark mode
-2. App automatically updates
-3. Verify all screens render correctly
-4. Check color contrast and readability
+All app state lives in a single Zustand store (`src/store/index.ts`). Components access it with `useAppStore()`:
+
+```ts
+const { currentUser, registerForMeal, getTodaysMeal } = useAppStore();
+```
+
+No reducers, no providers — just a hook.
+
+### Theme system
+
+`ThemeProvider` reads the system color scheme and exposes a `useTheme()` hook. Every component uses this instead of hardcoded colors. Dark mode is automatic — change your device appearance and the app updates instantly.
+
+### Role switcher
+
+A floating button (bottom-right corner) lets you switch between all four roles without logging in. It only appears in development (`__DEV__ === true`).
 
 ---
 
-## 🏆 Success Criteria
+## Backend Integration
 
-✅ App runs on iOS and Android without errors
-✅ All 4 user roles can be switched via dev tool
-✅ Role-based navigation shows correct tabs
-✅ Students can register/opt-out for meals
-✅ Mentors can create meals and view registrations
-✅ Staff can manage collections via scanner
-✅ Admins can manage users and penalties
-✅ Dark mode works on all screens
-✅ Mock data includes 126 students + staff
-✅ TypeScript strict mode with no errors
-✅ Clean, maintainable code ready for backend integration
+The API service layer is scaffolded in `src/services/api/` using Axios. To connect a real backend:
 
----
+**1. Set the API URL** (in `.env` or `app.json`):
+```
+EXPO_PUBLIC_API_URL=http://your-server/api
+```
 
-## 📄 License
+**2. Enable API mode** in `src/services/api/client.ts`:
+```ts
+const USE_API = true;
+```
 
-This project is for educational purposes.
+**3. Replace mock store calls** with service functions:
+```ts
+// Before (mock)
+const meals = useAppStore(state => state.meals);
 
----
+// After (real API)
+const meals = await mealService.getAll();
+```
 
-## 🤝 Contributing
+**4. Add authentication** — token storage with `expo-secure-store`, Axios interceptors for auth headers, and protected routes.
 
-This is a frontend prototype designed for backend integration. When contributing:
-1. Follow TypeScript strict mode
-2. Use existing themed components
-3. Maintain role-based access patterns
-4. Add proper type definitions
-5. Test on both light and dark modes
+**5. Add real-time updates** — WebSocket or SignalR for live registration and collection sync.
 
----
+### Planned API endpoints
 
-## 📞 Support
-
-For questions or issues, please refer to:
-- Expo Documentation: https://docs.expo.dev/
-- React Native Documentation: https://reactnative.dev/
-- Zustand Documentation: https://zustand-demo.pmnd.rs/
+| Resource | Endpoints |
+|---|---|
+| Meals | `GET /api/meals`, `POST /api/meals`, `PUT /api/meals/:id`, `DELETE /api/meals/:id` |
+| Users | `GET /api/users`, `PUT /api/users/:id` |
+| Registrations | `GET /api/registrations`, `POST /api/registrations`, `PUT /api/registrations/:id` |
+| Penalties | `GET /api/penalties`, `PUT /api/penalties/:id` |
 
 ---
 
-**Built with ❤️ using Expo, TypeScript, and React Native**
+## Known Limitations
+
+| Limitation | Detail |
+|---|---|
+| No real QR scanning | Scanner UI is a placeholder; full `expo-camera` integration needed |
+| No authentication | App skips login entirely — auth must be added before production |
+| No data persistence | Everything resets on reload; needs backend or local storage |
+| No real-time sync | Registrations don't sync between devices; needs WebSocket/SignalR |
+| No push notifications | Notification system is UI-only |
